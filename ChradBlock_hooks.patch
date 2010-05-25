@@ -1,0 +1,63 @@
+--- src/third_party/WebKit/WebCore/loader/DocLoader.cpp	2010-05-24 05:41:18.000000000 +0200
++++ src/third_party/WebKit/WebCore/loader/DocLoader.cpp	2010-05-24 05:45:54.944789937 +0200
+@@ -45,6 +45,8 @@
+ #include "Settings.h"
+ #include <wtf/text/CString.h>
+
++#include "AdBlock.h"
++
+ #define PRELOAD_DEBUG 0
+
+ namespace WebCore {
+@@ -170,6 +172,9 @@
+
+ bool DocLoader::canRequest(CachedResource::Type type, const KURL& url)
+ {
++	if (shouldbeBlocked(url) == true) {
++		return false;
++	}
+     // Some types of resources can be loaded only from the same origin.  Other
+     // types of resources, like Images, Scripts, and CSS, can be loaded from
+     // any URL.
+--- src/third_party/WebKit/WebCore/loader/FrameLoader.cpp	2010-05-24 05:41:18.000000000 +0200
++++ src/third_party/WebKit/WebCore/loader/FrameLoader.cpp	2010-05-24 05:47:46.428391313 +0200
+@@ -123,6 +123,8 @@
+ #include "SVGViewSpec.h"
+ #endif
+
++#include "AdBlock.h"
++
+ namespace WebCore {
+
+ #if ENABLE(SVG)
+@@ -1965,6 +1967,10 @@
+
+ void FrameLoader::loadWithDocumentLoader(DocumentLoader* loader, FrameLoadType type, PassRefPtr<FormState> prpFormState)
+ {
++    const KURL& newURL = loader->request().url();
++	if (shouldbeBlocked(newURL) == true) {
++		return;
++	}
+     ASSERT(m_client->hasWebView());
+
+     // Unfortunately the view must be non-nil, this is ultimately due
+@@ -1979,7 +1985,7 @@
+     RefPtr<FormState> formState = prpFormState;
+     bool isFormSubmission = formState;
+
+-    const KURL& newURL = loader->request().url();
++
+
+     if (shouldScrollToAnchor(isFormSubmission, policyChecker()->loadType(), newURL)) {
+         RefPtr<DocumentLoader> oldDocumentLoader = m_documentLoader;
+--- src/third_party/WebKit/WebCore/WebCore.gypi	2010-05-24 05:41:26.000000000 +0200
++++ src/third_party/WebKit/WebCore/WebCore.gypi	2010-05-24 05:44:25.488133185 +0200
+@@ -1735,6 +1735,8 @@
+             'loader/mac/ResourceLoaderMac.mm',
+             'loader/win/DocumentLoaderWin.cpp',
+             'loader/win/FrameLoaderWin.cpp',
++            'loader/AdBlock.cpp',
++            'loader/AdBlock.h',
+             'loader/Cache.cpp',
+             'loader/Cache.h',
+             'loader/CachedMetadata.h',
