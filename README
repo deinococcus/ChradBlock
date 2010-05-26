@@ -1,0 +1,139 @@
+So, you want to test the Adblocker?
+you want to help with development?
+Here's a Minimal Survival Guide to get you started:
+
+
+* Install the necessary Prerequisites:
+  see -> http://code.google.com/p/chromium/wiki/LinuxBuildInstructionsPrerequisites
+  $ pacman -S --needed python perl gcc gcc-libs bison flex gperf pkgconfig nss \
+  alsa-lib gconf glib2 gtk2 nspr ttf-ms-fonts freetype2 cairo dbus
+
+* create a working Directory, for example:
+  $ mkdir ~/chromium_work
+  $ cd ~/chromium_work
+
+* install depot_tools
+  see: http://dev.chromium.org/developers/how-tos/install-gclient
+  (~/chromium_work)$ svn co http://src.chromium.org/svn/trunk/tools/depot_tools
+
+* run:
+  (~/chromium_work)$ export PATH=`pwd`/depot_tools:"$PATH"
+  (~/chromium_work)$ gclient config http://src.chromium.org/svn/trunk/src
+
+* clone the ChradBlock repository:
+  (~/chromium_work)$ git clone git://github.com/deinococcus/ChradBlock
+  (to help with development, please check github help pages for proper git setup)
+
+* if you want, create yourself a script, that does the necessary setup of the Blocker,
+  for reference, here's mine:
+[update.sh]
+#!/bin/sh
+export PATH=`pwd`/depot_tools:"$PATH"
+
+# remove files from the tree,
+# triggers a re-fetch so we are definitely up to date
+rm -rfv `pwd`/src/third_party/WebKit/WebCore/loader/AdBlock.cpp
+rm -rfv `pwd`/src/third_party/WebKit/WebCore/loader/AdBlock.h
+rm -rfv `pwd`/src/third_party/WebKit/WebCore/loader/FrameLoader.cpp
+rm -rfv `pwd`/src/third_party/WebKit/WebCore/loader/DocLoader.cpp
+rm -rfv `pwd`/src/third_party/WebKit/WebCore/WebCore.gypi
+
+gclient sync --force --nohooks
+# gclient sync --force --nohooks --revision src@47915
+
+# make a of the original files
+# in case the patch needs regeneration
+cp -v `pwd`/src/third_party/WebKit/WebCore/loader/FrameLoader.cpp FrameLoader.cpp
+cp -v `pwd`/src/third_party/WebKit/WebCore/loader/DocLoader.cpp DocLoader.cpp
+cp -v `pwd`/src/third_party/WebKit/WebCore/WebCore.gypi WebCore.gypi
+
+# link Blocker to the tree
+ln -s `pwd`/ChradBlock/AdBlock.cpp `pwd`/src/third_party/WebKit/WebCore/loader/
+ln -s `pwd`/ChradBlock/AdBlock.h `pwd`/src/third_party/WebKit/WebCore/loader/
+
+# apply patch
+cd src && patch -p1 -i "../ChradBlock/ChradBlock_hooks.patch"
+[/update.sh]
+
+  save that script to ~/chromium_work/update.sh
+  make it executable, then do a
+  (~/chromium_work)$ ./update.sh
+
+* create a script to build the browser, again for reference, here's mine:
+
+[build.sh]
+#!/bin/sh
+
+export PATH=`pwd`/depot_tools:"$PATH"
+cd src/
+# sed -i "s/'-Werror'/''/" -i build/common.gypi || return 1
+# sed -e 's/\.kde/.kde4/' -i net/proxy/proxy_config_service_linux.cc || return 1
+export GYP_GENERATORS='make'
+export GYP_DEFINES
+        GYP_DEFINES="${GYP_DEFINES} gcc_version=44 no_strict_aliasing=1"
+        GYP_DEFINES="${GYP_DEFINES} use_system_zlib=1"
+        GYP_DEFINES="${GYP_DEFINES} use_system_libjpeg=1"
+        # See the following bug:
+        # http://code.google.com/p/chromium/issues/detail?id=32967
+        GYP_DEFINES="${GYP_DEFINES} use_system_libxml=0"
+        # See bug http://code.google.com/p/chromium/issues/detail?id=41020
+        GYP_DEFINES="${GYP_DEFINES} use_system_libxslt=0"
+        GYP_DEFINES="${GYP_DEFINES} use_system_bzip2=1"
+        GYP_DEFINES="${GYP_DEFINES} use_system_libevent=1"
+        GYP_DEFINES="${GYP_DEFINES} use_system_libpng=1"
+        GYP_DEFINES="${GYP_DEFINES} use_system_ffmpeg=0"
+
+GYP_DEFINES="${GYP_DEFINES} target_arch=x64"
+GYP_DEFINES="${GYP_DEFINES} werror="
+
+echo "${GYP_DEFINES}"
+
+build/gyp_chromium -f make build/all.gyp -Dproprietary_codecs=1 -Dlinux_use_tcmalloc=1 --depth=. || exit 1
+
+make -j3 BUILDTYPE=Release V=1 chrome chrome_sandbox || exit 1
+[/build.sh]
+  save the script, make it executable
+
+* build the browser:
+   see: http://code.google.com/p/chromium/wiki/LinuxBuildInstructions
+  (~/chromium_work)$ ./build.sh
+
+* after the build finished, run the browser for a quick test:
+ (~/chromium_work)$ ./src/out/Release/chrome
+
+* get Adblock pattern files from here:
+  --> https://easylist.adblockplus.org/
+  and save it to ~/.config/chromium/patterns.ini
+
+  after re-starting the browser, you should see soemthing like that:
+
+filtered URL: http://oas.heise.de/RealMedia/ads/Creatives/OasDefault/mjx/mjx.2009-11-17.0.js using Pattern: ^.*/RealMedia/ads/.*$
+filtered URL: http://oas.heise.de/RealMedia/ads/Creatives/OasDefault/mjx/mjx.2009-11-17.0.js using Pattern: ^.*/RealMedia/ads/.*$
+filtered URL: http://heise.ivwbox.de/cgi-bin/ivw/CP/news_7tage;/newsticker/?r=&d=47295.014024712145 using Pattern: /cgi-bin/ivw/.*
+filtered URL: http://heise.ivwbox.de/2004/01/survey.js using Pattern: ^.*ivwbox.de.*$
+filtered URL: http://heise.ivwbox.de/2004/01/survey.js using Pattern: ^.*ivwbox.de.*$
+
+* fin
+
+------ Random Thoughts -----
+* roy_hu (wh5a) is currently working on the IPC Interface (see branch ipc)
+
+* the Filterfile Syntax that needs to be implemented is described here:
+  -->>> https://adblockplus.org/en/filters
+  Implemented so far is only a smaaaallll subset of the complete syntax ;-)
+
+* This module is currently not able to remove text ads.
+
+* Whitelisting needs to be added
+  (basically all lines starting with '@@' are whitelisted urls)
+
+* ...
+
+--------
+Contact:
+http://bbs.archlinux.org/viewtopic.php?id=97742
+
+* ruth
+* roy_hu
+
+Happy Hacking ;-)
