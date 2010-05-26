@@ -21,87 +21,46 @@
 */
 #include "AdBlock.h"
 
+#include "base/pickle.h"
+#include "base/unix_domain_socket_posix.h"
+#include "chrome/common/sandbox_methods_linux.h"
+
+#include <iostream>
+
 using namespace std;
+
+static const int kMagicSandboxIPCDescriptor = 5;
 
 namespace WebCore {
 
-static vector<String> blacklistPatterns;
-gint i;
+  // Proxy to browser
+  bool shouldbeBlocked(const KURL& url) {
+    String urlString = url.string();
+    if (!urlString.startsWith("http://")) {
+      return false;
+    }
 
-void addPattern(const String& pat)
-{
-	int delim = pat.find("$");
-	String pattern;
-	if (delim < 0) {
-		delim = pat.length();
-	}
-	pattern = pat.left(delim);
-	if (pattern.startsWith("/") && pattern.endsWith("/")) {
-		pattern.insert("^.*", 0);
-		pattern.append(".*$");
-		blacklistPatterns.push_back(pattern);
-		return;
-	}
-	int pos = 0;
-	replace(pattern, RegularExpression("\\*", TextCaseSensitive), ".*");
-	replace(pattern, RegularExpression("\\^", TextCaseSensitive), ".*$");
-	replace(pattern, RegularExpression("^\\|\\|", TextCaseSensitive), "^.*");
-	if (pattern.find(";") < 0 && pattern.find("|") < 0) { /* fancy stuff; not yet supported */
-		blacklistPatterns.push_back(pattern);
-	}
-	// cout << "Pattern is: " << pattern.utf8().data() << endl;
-}
+    cout << "Sending request " << urlString.utf8().data() << " to browser" << endl;
+    Pickle request;
+    uint8_t reply_buf[256];
+    request.WriteInt(LinuxSandbox::METHOD_SHOULD_BLOCK_URL);
+    request.WriteString(urlString.utf8().data());
+    const ssize_t r = base::SendRecvMsg(kMagicSandboxIPCDescriptor,
+                                        reply_buf, sizeof(reply_buf),
+                                        NULL, request);
+    if (r == -1) {
+      cout << "Request failed" << endl;
+      return false;
+    }
 
-void ab_loadFile(gchar *filePath)
-{
-	FILE *file = fopen(filePath, "r");
-	if (file) {
-		char buf[512];
-		fgets(buf, 512, file);
-		while (fgets(buf, 512, file)) {
-			String line(buf);
-			line.replace("\n","");
-			if (line.startsWith("@@")) {
-				// ab_whiteList.addPattern(line.substring(2));
-			} else if (!line.startsWith("!") && !line.startsWith("[") && line.find("#") < 0){
-				addPattern(line);
-			}
-		}
-		fclose(file);
-	}
-	return;
-}
-
-void ab_initialize()
-{
-	const gchar *homeDir = g_getenv("HOME");
-	if (!homeDir)
-		homeDir = g_get_home_dir();
-	gchar *filePath;
-	filePath = g_build_filename(homeDir, ".config/chromium/patterns.ini", NULL);
-	ab_loadFile(filePath);
-	g_free(filePath);
-}
-
-bool shouldbeBlocked(const KURL& url)
-{
-	String urlString = url.string();
-	if (!urlString.startsWith("http://")) {
-		return false;
-	}
-	if (blacklistPatterns.size() == 0) {
-		ab_initialize();
-	}
-	for (i = 0; i < blacklistPatterns.size(); i++) {
-		RegularExpression patternRegExp(blacklistPatterns[i], TextCaseSensitive);
-		int matchLength = 0;
-		patternRegExp.match(urlString, 0 , &matchLength);
-		if (matchLength > 0) {
-			cout << "filtered URL: " << urlString.utf8().data() << " using Pattern: " << blacklistPatterns[i].utf8().data() << endl;
-			return true;
-		}
-	}
-	return false;
-}
+    Pickle reply(reinterpret_cast<char*>(reply_buf), r);
+    void* iter = NULL;
+    bool ret;
+    if (!reply.ReadBool(&iter, &ret))  {
+      cout << "Request failed" << endl;
+      return false;
+    }
+    return ret;
+  }
 
 }

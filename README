@@ -1,0 +1,2 @@
+ln -s `pwd`/AdBlock.h src/third_party/WebKit/WebCore/loader/
+ln -s `pwd`/AdBlock.cpp src/third_party/WebKit/WebCore/loader/
