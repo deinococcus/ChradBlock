@@ -1,2 +1,26 @@
-ln -s `pwd`/AdBlock.h src/third_party/WebKit/WebCore/loader/
-ln -s `pwd`/AdBlock.cpp src/third_party/WebKit/WebCore/loader/
+These commands give you an idea where the new files should go to:
+      ln -s `pwd`/AdBlock.h src/third_party/WebKit/WebCore/loader/
+      ln -s `pwd`/AdBlock.cpp src/third_party/WebKit/WebCore/loader/
+      ln -s `pwd`/AdBlockImpl.h src/chrome/browser/renderer_host/
+      ln -s `pwd`/AdBlockImpl.cpp src/chrome/browser/renderer_host/
+The patches are to be applied to Chromium's existing files.
+
+Design:
+The renderer before loading a url, sends the string via IPC to the
+browser, which then queries the pre-built blacklist and tells the
+renderer to block the request or not. An alternative is to simply
+returns the handle of the blacklist file to the renderer, which does
+the parsing and matching. This way we don't need to change the
+original AdBlock code too much, but it also means every tab loads the
+blacklist again and again.
+
+TODO:
+Support more advanced filter rules: http://adblockplus.org/en/filters
+Support customization, ideally through extensions
+
+Authors:
+* ruth(f.c.s) (deinococcus.radiophilus@gmail.com): Implemented the first version
+* Wei Hu <weihu@cs.virginia.edu>: Split AdBlock into two pieces in
+  order to support sandbox properly. Refactored the string operations
+  to rely on std and chromium code instead of webkit code. Fixed a few
+  regular expression bugs (or so I hope).
