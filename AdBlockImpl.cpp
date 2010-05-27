@@ -40,15 +40,15 @@ void AdBlockImpl::addPattern(string& pat) {
   }
 
   string orig(pat);
-  ReplaceSubstringsAfterOffset(&pat, 0, ".", "\.");
-  ReplaceSubstringsAfterOffset(&pat, 0, "?", "\?");
+  ReplaceSubstringsAfterOffset(&pat, 0, ".", "\\.");
+  ReplaceSubstringsAfterOffset(&pat, 0, "?", "\\?");
   ReplaceSubstringsAfterOffset(&pat, 0, "*", ".*");
   ReplaceSubstringsAfterOffset(&pat, 0, "||", "");
   ReplaceSubstringsAfterOffset(&pat, 0, "^", "[^a-aA-Z0-9\\-.%]");
-  if (StartsWithASCII(pat, "|", true))
+  if (StartsWithASCII(pat, "|", true) && EndsWith(pat, "|", true)) {
     pat.replace(0, 1, "^");
-  if (EndsWith(pat, "|", true))
     pat.replace(pat.length()-1, 1, "$");
+  }
 
   // if (orig.compare(pat) == 0)
   //   cerr << "Adding pattern " << pat << endl;
