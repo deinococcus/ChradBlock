@@ -24,18 +24,9 @@
 
 #include "config.h"
 #include "CachedResource.h"
-#include <wtf/text/CString.h>
 
-#include <RegularExpression.h>
-#include <pcre.h>
-#include <iostream>
-
-#include <stdio.h>
-#include <glib.h>
-#include <glib/gstdio.h>
-
-#include <vector>
 namespace WebCore {
 	bool shouldbeBlocked(const KURL& url);
 }
+
 #endif

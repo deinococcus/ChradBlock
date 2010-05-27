@@ -1,0 +1,72 @@
+Index: src/chrome/common/sandbox_methods_linux.h
+===================================================================
+--- src/chrome/common/sandbox_methods_linux.h	(revision 48115)
++++ src/chrome/common/sandbox_methods_linux.h	(working copy)
+@@ -17,6 +17,7 @@
+     METHOD_GET_CHILD_WITH_INODE = 34,
+     METHOD_GET_STYLE_FOR_STRIKE = 35,
+     METHOD_MAKE_SHARED_MEMORY_SEGMENT = 36,
++    METHOD_SHOULD_BLOCK_URL,
+   };
+ };
+ 
+Index: src/chrome/browser/renderer_host/render_sandbox_host_linux.cc
+===================================================================
+--- src/chrome/browser/renderer_host/render_sandbox_host_linux.cc	(revision 48115)
++++ src/chrome/browser/renderer_host/render_sandbox_host_linux.cc	(working copy)
+@@ -28,6 +28,8 @@
+ #include "SkFontHost_fontconfig_direct.h"
+ #include "SkFontHost_fontconfig_ipc.h"
+ 
++#include "AdBlockImpl.h"
++
+ using WebKit::WebCString;
+ using WebKit::WebFontInfo;
+ using WebKit::WebUChar;
+@@ -139,6 +141,8 @@
+       HandleGetStyleForStrike(fd, pickle, iter, fds);
+     } else if (kind == LinuxSandbox::METHOD_MAKE_SHARED_MEMORY_SEGMENT) {
+       HandleMakeSharedMemorySegment(fd, pickle, iter, fds);
++    } else if (kind == LinuxSandbox::METHOD_SHOULD_BLOCK_URL) {
++      HandleShouldBlockUrl(fd, pickle, iter, fds);
+     }
+ 
+   error:
+@@ -148,6 +152,16 @@
+     }
+   }
+ 
++  void HandleShouldBlockUrl(int fd, const Pickle& pickle, void* iter,
++                               std::vector<int>& fds) {
++    std::string url;
++    if (!pickle.ReadString(&iter, &url))
++      return;
++    Pickle reply;
++    reply.WriteBool(adb.shouldbeBlocked(url));
++    SendRendererReply(fds, reply, -1);
++  }
++
+   void HandleFontMatchRequest(int fd, const Pickle& pickle, void* iter,
+                               std::vector<int>& fds) {
+     bool fileid_valid;
+@@ -391,6 +405,7 @@
+   const int browser_socket_;
+   FontConfigDirect* const font_config_;
+   std::vector<std::string> sandbox_cmd_;
++  AdBlockImpl adb;
+ };
+ 
+ // -----------------------------------------------------------------------------
+Index: src/chrome/chrome_browser.gypi
+===================================================================
+--- src/chrome/chrome_browser.gypi	(revision 48115)
++++ src/chrome/chrome_browser.gypi	(working copy)
+@@ -1872,6 +1872,8 @@
+         'browser/renderer_host/gtk_key_bindings_handler.h',
+         'browser/renderer_host/render_process_host.cc',
+         'browser/renderer_host/render_process_host.h',
++        'browser/renderer_host/AdBlockImpl.h',
++        'browser/renderer_host/AdBlockImpl.cpp',
+         'browser/renderer_host/render_sandbox_host_linux.h',
+         'browser/renderer_host/render_sandbox_host_linux.cc',
+         'browser/renderer_host/render_view_host.cc',
