@@ -43,8 +43,8 @@ void AdBlockImpl::addPattern(string& pat) {
   ReplaceSubstringsAfterOffset(&pat, 0, ".", "\\.");
   ReplaceSubstringsAfterOffset(&pat, 0, "?", "\\?");
   ReplaceSubstringsAfterOffset(&pat, 0, "*", ".*");
-  ReplaceSubstringsAfterOffset(&pat, 0, "||", "");
   ReplaceSubstringsAfterOffset(&pat, 0, "^", "[^a-aA-Z0-9\\-.%]");
+  ReplaceSubstringsAfterOffset(&pat, 0, "||", "^https?://");
   if (StartsWithASCII(pat, "|", true) && EndsWith(pat, "|", true)) {
     pat.replace(0, 1, "^");
     pat.replace(pat.length()-1, 1, "$");
