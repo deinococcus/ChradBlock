@@ -26,7 +26,7 @@
 #include "CachedResource.h"
 
 namespace WebCore {
-	bool shouldbeBlocked(const KURL& url, int type);
+	bool shouldbeBlocked(const KURL& url);
 }
 
 #endif

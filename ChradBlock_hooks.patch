@@ -13,7 +13,7 @@
 
  bool DocLoader::canRequest(CachedResource::Type type, const KURL& url)
  {
-+	if (shouldbeBlocked(url, type) == true) {
++	if (shouldbeBlocked(url) == true) {
 +		return false;
 +	}
      // Some types of resources can be loaded only from the same origin.  Other
@@ -35,7 +35,7 @@
  void FrameLoader::loadWithDocumentLoader(DocumentLoader* loader, FrameLoadType type, PassRefPtr<FormState> prpFormState)
  {
 +    const KURL& newURL = loader->request().url();
-+	if (shouldbeBlocked(newURL, -1) == true) {
++	if (shouldbeBlocked(newURL) == true) {
 +		return;
 +	}
      ASSERT(m_client->hasWebView());
