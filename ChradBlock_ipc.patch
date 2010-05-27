@@ -17,7 +17,7 @@ Index: src/chrome/browser/renderer_host/render_sandbox_host_linux.cc
 @@ -28,6 +28,8 @@
  #include "SkFontHost_fontconfig_direct.h"
  #include "SkFontHost_fontconfig_ipc.h"
- 
+
 +#include "AdBlockImpl.h"
 +
  using WebKit::WebCString;
@@ -30,32 +30,35 @@ Index: src/chrome/browser/renderer_host/render_sandbox_host_linux.cc
 +    } else if (kind == LinuxSandbox::METHOD_SHOULD_BLOCK_URL) {
 +      HandleShouldBlockUrl(fd, pickle, iter, fds);
      }
- 
+
    error:
-@@ -148,6 +152,16 @@
+@@ -148,6 +152,19 @@
      }
    }
- 
+
 +  void HandleShouldBlockUrl(int fd, const Pickle& pickle, void* iter,
 +                               std::vector<int>& fds) {
 +    std::string url;
++    int type;
 +    if (!pickle.ReadString(&iter, &url))
 +      return;
++    if (!pickle.ReadInt(&iter, &type))
++      return;
 +    Pickle reply;
-+    reply.WriteBool(adb.shouldbeBlocked(url));
++    reply.WriteBool(adb.shouldbeBlocked(url, type));
 +    SendRendererReply(fds, reply, -1);
 +  }
 +
    void HandleFontMatchRequest(int fd, const Pickle& pickle, void* iter,
                                std::vector<int>& fds) {
      bool fileid_valid;
-@@ -391,6 +405,7 @@
+@@ -391,6 +408,7 @@
    const int browser_socket_;
    FontConfigDirect* const font_config_;
    std::vector<std::string> sandbox_cmd_;
 +  AdBlockImpl adb;
  };
- 
+
  // -----------------------------------------------------------------------------
 Index: src/chrome/chrome_browser.gypi
 ===================================================================

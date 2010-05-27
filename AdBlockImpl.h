@@ -13,7 +13,7 @@
 class AdBlockImpl {
  public:
   AdBlockImpl();
-  bool shouldbeBlocked(const std::string& url);
+  bool shouldbeBlocked(const std::string& url, int type);
 
  private:
   /* WebRegularExpression is NonCopyable, so we cannot create a vector of regexps. */

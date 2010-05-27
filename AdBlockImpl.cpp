@@ -58,7 +58,7 @@ void AdBlockImpl::addPattern(string& pat) {
   blacklistPatterns.push_back(WebString(ASCIIToUTF16(pat)));
 }
 
-bool AdBlockImpl::shouldbeBlocked(const string& url) {
+bool AdBlockImpl::shouldbeBlocked(const string& url, int type) {
   /* Build the regexps every time we are queried.
      How do we accelerate this? */
   for (size_t i = 0; i < blacklistPatterns.size(); i++) {
@@ -67,7 +67,7 @@ bool AdBlockImpl::shouldbeBlocked(const string& url) {
     WebString str(ASCIIToUTF16(url));
     patternRegExp.match(str, 0 , &matchLength);
     if (matchLength > 0) {
-      cout << "Filtered URL: " << url << " using Pattern: " << blacklistPatterns[i].utf8().data() << endl;
+      cout << "Filtered URL: " << url << " using Pattern: " << blacklistPatterns[i].utf8().data() << " RequestType: " << type << endl;
       /*
         Please uncomment the following code and help me debug it:
         The log file was created, but nothing is written.

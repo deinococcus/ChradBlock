@@ -34,7 +34,7 @@ static const int kMagicSandboxIPCDescriptor = 5;
 namespace WebCore {
 
   // Proxy to browser
-  bool shouldbeBlocked(const KURL& url) {
+  bool shouldbeBlocked(const KURL& url, int type) {
     String urlString = url.string();
     if (!urlString.startsWith("http://")) {
       return false;
@@ -45,6 +45,7 @@ namespace WebCore {
     uint8_t reply_buf[256];
     request.WriteInt(LinuxSandbox::METHOD_SHOULD_BLOCK_URL);
     request.WriteString(urlString.utf8().data());
+    request.WriteInt(type);
     const ssize_t r = base::SendRecvMsg(kMagicSandboxIPCDescriptor,
                                         reply_buf, sizeof(reply_buf),
                                         NULL, request);
