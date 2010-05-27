@@ -40,6 +40,8 @@ void AdBlockImpl::addPattern(string& pat) {
   }
 
   string orig(pat);
+  ReplaceSubstringsAfterOffset(&pat, 0, ".", "\.");
+  ReplaceSubstringsAfterOffset(&pat, 0, "?", "\?");
   ReplaceSubstringsAfterOffset(&pat, 0, "*", ".*");
   ReplaceSubstringsAfterOffset(&pat, 0, "||", "");
   ReplaceSubstringsAfterOffset(&pat, 0, "^", "[^a-aA-Z0-9\\-.%]");
