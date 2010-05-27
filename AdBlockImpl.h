@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <fstream>
 
 #include <glib.h>
 
@@ -19,6 +20,7 @@ class AdBlockImpl {
   std::vector<WebKit::WebString> blacklistPatterns;
   void addPattern(std::string& pat);
   void loadFile(gchar *filePath);
+  std::ofstream log;
 };
 
 #endif  // CHROME_BROWSER_RENDERER_HOST_AD_BLOCK_IMPL_H_

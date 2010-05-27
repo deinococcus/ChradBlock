@@ -40,7 +40,7 @@ namespace WebCore {
       return false;
     }
 
-    cout << "Sending request " << urlString.utf8().data() << " to browser" << endl;
+    //    cout << "Sending request " << urlString.utf8().data() << " to browser" << endl;
     Pickle request;
     uint8_t reply_buf[256];
     request.WriteInt(LinuxSandbox::METHOD_SHOULD_BLOCK_URL);
@@ -49,7 +49,7 @@ namespace WebCore {
                                         reply_buf, sizeof(reply_buf),
                                         NULL, request);
     if (r == -1) {
-      cout << "Request failed" << endl;
+      cerr << "AdBlock: Request failed!!" << endl;
       return false;
     }
 
@@ -57,7 +57,7 @@ namespace WebCore {
     void* iter = NULL;
     bool ret;
     if (!reply.ReadBool(&iter, &ret))  {
-      cout << "Request failed" << endl;
+      cerr << "AdBlock: Request failed!!" << endl;
       return false;
     }
     return ret;
